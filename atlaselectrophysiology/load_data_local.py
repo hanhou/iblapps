@@ -17,19 +17,20 @@ class LoadDataLocal:
         self.sess_path = []
         self.brain_atlas = atlas.AllenAtlas(25)
 
-    def get_info(self, folder_path):
+    def get_info(self, folder_path, shank_idx=0):
         """
         Read in the local json file to see if any previous alignments exist
         """
         self.folder_path = folder_path
 
-        return self.get_previous_alignments()
+        return self.get_previous_alignments(shank_idx)
 
-    def get_previous_alignments(self):
+    def get_previous_alignments(self, shank_idx=0):
+        prev_alignment_file = 'prev_alignments.json' if shank_idx == 0 else f'prev_alignments_shank{shank_idx}.json'
 
         # If previous alignment json file exists, read in previous alignments
-        if Path(self.folder_path, 'prev_alignments.json').exists():
-            with open(Path(self.folder_path, 'prev_alignments.json'), "r") as f:
+        if Path(self.folder_path, prev_alignment_file).exists():
+            with open(Path(self.folder_path, prev_alignment_file), "r") as f:
                 self.alignments = json.load(f)
                 self.prev_align = []
                 if self.alignments:
@@ -79,11 +80,16 @@ class LoadDataLocal:
 
         return self.allen
 
-    def get_xyzpicks(self):
+    def get_xyzpicks(self, shank_idx=0):
         # Read in local xyz_picks file
         # This file must exist, otherwise we don't know where probe was
-        assert(Path(self.folder_path, 'xyz_picks.json').exists())
-        with open(Path(self.folder_path, 'xyz_picks.json'), "r") as f:
+        xyz_file_name = '*xyz_picks.json' if shank_idx == 0 else f'*shank{shank_idx}_xyz_picks.json'
+        xyz_file = sorted(self.folder_path.glob(xyz_file_name))
+
+        if len(xyz_file) != 1:
+            return None
+
+        with open(xyz_file[0], "r") as f:
             user_picks = json.load(f)
 
         xyz_picks = np.array(user_picks['xyz_picks']) / 1e6
@@ -162,7 +168,7 @@ class LoadDataLocal:
 
         return description, region_lookup
 
-    def upload_data(self, feature, track, xyz_channels):
+    def upload_data(self, feature, track, xyz_channels, shank_idx=0):
 
         brain_regions = self.brain_atlas.regions.get(self.brain_atlas.get_labels
                                                      (xyz_channels))
@@ -185,7 +191,9 @@ class LoadDataLocal:
         else:
             original_json = data
         # Save the new alignment
-        with open(Path(self.folder_path, 'prev_alignments.json'), "w") as f:
+        prev_alignment_file = 'prev_alignments.json' if shank_idx == 0 else f'prev_alignments_shank{shank_idx}.json'
+
+        with open(Path(self.folder_path, prev_alignment_file), "w") as f:
             json.dump(original_json, f, indent=2, separators=(',', ': '))
 
     @staticmethod

@@ -18,6 +18,9 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
     def __init__(self, offline=False):
         super(MainWindow, self).__init__()
 
+        # For shank selection
+        self.current_shank_idx = 0   # 0: single-shank 1.0 or 2.0 probes; 1-4: shank# for four-shank 2.0 probe
+
         self.init_variables()
         self.init_layout(self, offline=offline)
         if not offline:
@@ -33,6 +36,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         """
         Initialise variables
         """
+
         # Line styles and fonts
         self.kpen_dot = pg.mkPen(color='k', style=QtCore.Qt.DotLine, width=2)
         self.rpen_dot = pg.mkPen(color='r', style=QtCore.Qt.DotLine, width=2)
@@ -45,7 +49,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
 
         # Variables to do with probe dimension
         self.probe_tip = 0
-        self.probe_top = 3840
+        self.probe_top = 3840 if self.current_shank_idx == 0 else 720
         self.probe_extra = 100
         self.view_total = [-2000, 6000]
         self.depth = np.arange(self.view_total[0], self.view_total[1], 20)
@@ -797,8 +801,10 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
             self.slice_item = self.fig_slice_hist
 
         self.fig_slice.addItem(img)
-        self.traj_line = pg.PlotCurveItem()
-        self.traj_line.setData(x=self.xyz_track[:, 0], y=self.xyz_track[:, 2], pen=self.kpen_solid)
+        self.traj_line = pg.PlotDataItem()
+        self.traj_line.setData(x=self.xyz_track[:, 0], y=self.xyz_track[:, 2], pen=self.kpen_solid,
+                               symbol='o', symbolBrush=(214, 51, 255), symbolSize=12)
+        self.traj_line.setAlpha(0.5, 'auto')
         self.fig_slice.addItem(self.traj_line)
         self.plot_channels()
 
@@ -1058,12 +1064,21 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         self.data_status = False
         folder_path = Path(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Folder"))
         self.folder_line.setText(str(folder_path))
-        self.prev_alignments = self.loaddata.get_info(folder_path)
+        self.prev_alignments = self.loaddata.get_info(folder_path, shank_idx=self.current_shank_idx)
         self.populate_lists(self.prev_alignments, self.align_list, self.align_combobox)
         self.feature_prev, self.track_prev = self.loaddata.get_starting_alignment(0)
 
     def on_alignment_selected(self, idx):
         self.feature_prev, self.track_prev = self.loaddata.get_starting_alignment(idx)
+        
+    def on_shank_selected(self, idx):
+        self.current_shank_idx = idx
+
+        # Update prev_alignments
+        self.prev_alignments = self.loaddata.get_info(Path(self.folder_line.text()), shank_idx=self.current_shank_idx)
+        self.populate_lists(self.prev_alignments, self.align_list, self.align_combobox)
+        self.feature_prev, self.track_prev = self.loaddata.get_starting_alignment(0)
+
 
     def data_button_pressed(self):
         """
@@ -1084,13 +1099,21 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         self.remove_lines_points()
         self.init_variables()
 
+        [ll.setY(self.probe_top) for ll in self.probe_top_lines]  # Update the probe top lines
+
         # Only run once
         if not self.data_status:
-            self.alf_path, ephys_path, self.chn_depths, self.sess_notes = self.loaddata.get_data()
-            if not self.alf_path:
+            self.alf_path, self.ephys_path, self.chn_depths, self.sess_notes = self.loaddata.get_data()
+
+        # Always reload xyzpicks (for switch shanks)
+        if not self.alf_path:
+            return
+        else:
+            self.xyz_picks = self.loaddata.get_xyzpicks(shank_idx=self.current_shank_idx)
+            if self.xyz_picks is None:
+                xyz_file_name = '*xyz_picks.json' if self.current_shank_idx == 0 else f'*shank{self.current_shank_idx}_xyz_picks.json'
+                QtGui.QMessageBox.information(self, 'Status', (f"{xyz_file_name} not found (or more than one were found)!"))
                 return
-            else:
-                self.xyz_picks = self.loaddata.get_xyzpicks()
 
         if np.any(self.feature_prev):
             self.ephysalign = EphysAlignment(self.xyz_picks, self.chn_depths,
@@ -1116,25 +1139,25 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
                                                       self.ephysalign.track_extent)
         self.hist_data_ref['colour'] = self.ephysalign.region_colour
 
-        if not self.data_status:
-            self.plotdata = pd.PlotData(self.alf_path, ephys_path)
-            self.scat_drift_data = self.plotdata.get_depth_data_scatter()
-            (self.scat_fr_data, self.scat_p2t_data,
-             self.scat_amp_data) = self.plotdata.get_fr_p2t_data_scatter()
-            self.img_corr_data = self.plotdata.get_correlation_data_img()
-            self.img_fr_data = self.plotdata.get_fr_img()
-            self.img_rms_APdata, self.probe_rms_APdata = self.plotdata.get_rms_data_img_probe('AP')
-            self.img_rms_LFPdata, self.probe_rms_LFPdata = self.plotdata.get_rms_data_img_probe(
-                'LF')
-            self.img_lfp_data, self.probe_lfp_data = self.plotdata.get_lfp_spectrum_data()
-            self.line_fr_data, self.line_amp_data = self.plotdata.get_fr_amp_data_line()
-            self.probe_rfmap, self.rfmap_boundaries = self.plotdata.get_rfmap_data()
-            self.img_stim_data = self.plotdata.get_passive_events()
-            self.slice_data = self.loaddata.get_slice_images(self.ephysalign.xyz_samples)
+        # if not self.data_status:   # Always refresh to switch shanks
+        self.plotdata = pd.PlotData(self.alf_path, self.ephys_path, shank_idx=self.current_shank_idx)
+        self.scat_drift_data = self.plotdata.get_depth_data_scatter()
+        (self.scat_fr_data, self.scat_p2t_data,
+         self.scat_amp_data) = self.plotdata.get_fr_p2t_data_scatter()
+        self.img_corr_data = self.plotdata.get_correlation_data_img()
+        self.img_fr_data = self.plotdata.get_fr_img()
+        self.img_rms_APdata, self.probe_rms_APdata = self.plotdata.get_rms_data_img_probe('AP')
+        self.img_rms_LFPdata, self.probe_rms_LFPdata = self.plotdata.get_rms_data_img_probe(
+            'LF')
+        self.img_lfp_data, self.probe_lfp_data = self.plotdata.get_lfp_spectrum_data()
+        self.line_fr_data, self.line_amp_data = self.plotdata.get_fr_amp_data_line()
+        self.probe_rfmap, self.rfmap_boundaries = self.plotdata.get_rfmap_data()
+        self.img_stim_data = self.plotdata.get_passive_events()
+        self.slice_data = self.loaddata.get_slice_images(self.ephysalign.xyz_samples)
 
-            self.data_status = True
+        self.data_status = True
 
-            self.init_menubar()
+        self.init_menubar()
 
         # Initialise checked plots
         self.img_init.setChecked(True)
@@ -1539,8 +1562,8 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
 
         if upload == QtGui.QMessageBox.Yes:
             self.loaddata.upload_data(self.features[self.idx], self.track[self.idx],
-                                      self.xyz_channels)
-            self.prev_alignments = self.loaddata.get_previous_alignments()
+                                      self.xyz_channels, shank_idx=self.current_shank_idx)
+            self.prev_alignments = self.loaddata.get_previous_alignments(shank_idx=self.current_shank_idx)
             self.populate_lists(self.prev_alignments, self.align_list, self.align_combobox)
             self.loaddata.get_starting_alignment(0)
             QtGui.QMessageBox.information(self, 'Status', "Channels locations saved")

@@ -8,8 +8,10 @@ from brainbox.task import passive
 import scipy
 from PyQt5 import QtGui
 
-N_BNK = 4
+# Workaround for four-shank probes (horizontal strip only)
 BNK_SIZE = 10
+SHANK_X_RANGES = [[-np.inf, np.inf], [-50, 50], [200, 300], [450, 600], [700, 800]]
+
 AUTOCORR_BIN_SIZE = 0.25 / 1000
 AUTOCORR_WIN_SIZE = 10 / 1000
 FS = 30000
@@ -17,13 +19,21 @@ np.seterr(divide='ignore', invalid='ignore')
 
 
 class PlotData:
-    def __init__(self, alf_path, ephys_path):
+    def __init__(self, alf_path, ephys_path, shank_idx=0):
 
         self.alf_path = alf_path
         self.ephys_path = ephys_path
 
-        self.chn_coords = np.load(Path(self.alf_path, 'channels.localCoordinates.npy'))
-        self.chn_ind = np.load(Path(self.alf_path, 'channels.rawInd.npy'))
+        self.chn_coords_raw = np.load(Path(self.alf_path, 'channels.localCoordinates.npy'))
+        self.chn_ind_ori = np.load(Path(self.alf_path, 'channels.rawInd.npy'))
+
+        # Handle single-shank or four-shank (horizontal strip only)
+        _shank_x_range = SHANK_X_RANGES[shank_idx]
+        _this_shank_chn_ind = (_shank_x_range[0] <= self.chn_coords_raw[:, 0]) & (self.chn_coords_raw[:, 0] < _shank_x_range[1])
+        self.chn_ind = self.chn_ind_ori[_this_shank_chn_ind]
+        self.chn_coords = self.chn_coords_raw[_this_shank_chn_ind, :]
+        self.N_BNK = len(np.unique(self.chn_coords[:, 0])) # Auto get N_BNK (num of columns on each shank)
+
         # See if spike data is available
         try:
             self.spikes = alf.io.load_object(self.alf_path, 'spikes')
@@ -34,6 +44,13 @@ class PlotData:
 
         try:
             self.clusters = alf.io.load_object(self.alf_path, 'clusters')
+
+            # First filter out other shanks for 4-shank probes
+            # Note that clusters.channels here is the index in chn_ind, not the channels in spikeGLX!!
+            this_shank_spike_ind = np.isin(self.chn_ind_ori[self.clusters.channels[self.spikes.clusters]], self.chn_ind)
+            for key in self.spikes.keys():
+                self.spikes[key] = self.spikes[key][this_shank_spike_ind]
+
             self.filter_units('all')
             self.cluster_data_status = True
             self.compute_timescales()
@@ -399,7 +416,7 @@ class PlotData:
             'offset': probe_offset,
             'levels': probe_levels,
             'cmap': cmap,
-            'xrange': np.array([0 * BNK_SIZE, (N_BNK) * BNK_SIZE]),
+            'xrange': np.array([0 * BNK_SIZE, (self.N_BNK) * BNK_SIZE]),
             'title': format + ' RMS (uV)'
         }
 
@@ -461,7 +478,7 @@ class PlotData:
                     'levels': probe_levels,
                     'cmap': 'viridis',
                     'xaxis': 'Time (s)',
-                    'xrange': np.array([0 * BNK_SIZE, (N_BNK) * BNK_SIZE]),
+                    'xrange': np.array([0 * BNK_SIZE, (self.N_BNK) * BNK_SIZE]),
                     'title': f"{freq[0]} - {freq[1]} Hz (dB)"}
                 }
                 data_probe.update(lfp_band_data)
@@ -567,8 +584,8 @@ class PlotData:
     def arrange_channels2banks(self, data):
         Y_OFFSET = 20
         bnk_data = []
-        bnk_scale = np.empty((N_BNK, 2))
-        bnk_offset = np.empty((N_BNK, 2))
+        bnk_scale = np.empty((self.N_BNK, 2))
+        bnk_offset = np.empty((self.N_BNK, 2))
         for iX, x in enumerate(np.unique(self.chn_coords[:, 0])):
             bnk_idx = np.where(self.chn_coords[:, 0] == x)[0]
             bnk_vals = data[bnk_idx]
