@@ -118,7 +118,7 @@ def ks2_to_alf(ks_path, bin_path, out_path, bin_file=None, ampfactor=1, label=No
     ac.convert(out_path, label=label, force=force, ampfactor=ampfactor)
 
 
-def extract_data(ks_path, ephys_path, out_path):
+def extract_data(ks_path, ephys_path, out_path, if_ap_rmsmap=True):
     efiles = spikeglx.glob_ephys_files(ephys_path)
 
     for efile in efiles:
@@ -126,7 +126,8 @@ def extract_data(ks_path, ephys_path, out_path):
             ks2_to_alf(ks_path, ephys_path, out_path, bin_file=efile.ap,
                        ampfactor=_sample2v(efile.ap), label=None, force=True)
 
-            extract_rmsmap(efile.ap, out_folder=out_path, spectra=False)
+            if if_ap_rmsmap:
+                extract_rmsmap(efile.ap, out_folder=out_path, spectra=False)
         if efile.get('lf') and efile.lf.exists():
             extract_rmsmap(efile.lf, out_folder=out_path)
 

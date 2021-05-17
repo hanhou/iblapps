@@ -1111,7 +1111,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         else:
             self.xyz_picks = self.loaddata.get_xyzpicks(shank_idx=self.current_shank_idx)
             if self.xyz_picks is None:
-                xyz_file_name = '*xyz_picks.json' if self.current_shank_idx == 0 else f'*shank{self.current_shank_idx}_xyz_picks.json'
+                xyz_file_name = '*xyz_picks.json' if self.current_shank_idx == 0 else f'*shank{self.current_shank_idx - 1}_xyz_picks.json'
                 QtGui.QMessageBox.information(self, 'Status', (f"{xyz_file_name} not found (or more than one were found)!"))
                 return
 

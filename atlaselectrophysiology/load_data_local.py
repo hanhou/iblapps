@@ -26,7 +26,7 @@ class LoadDataLocal:
         return self.get_previous_alignments(shank_idx)
 
     def get_previous_alignments(self, shank_idx=0):
-        prev_alignment_file = 'prev_alignments.json' if shank_idx == 0 else f'prev_alignments_shank{shank_idx}.json'
+        prev_alignment_file = 'prev_alignments.json' if shank_idx == 0 else f'prev_alignments_shank{shank_idx - 1}.json'
 
         # If previous alignment json file exists, read in previous alignments
         if Path(self.folder_path, prev_alignment_file).exists():
@@ -83,7 +83,7 @@ class LoadDataLocal:
     def get_xyzpicks(self, shank_idx=0):
         # Read in local xyz_picks file
         # This file must exist, otherwise we don't know where probe was
-        xyz_file_name = '*xyz_picks.json' if shank_idx == 0 else f'*shank{shank_idx}_xyz_picks.json'
+        xyz_file_name = '*xyz_picks.json' if shank_idx == 0 else f'*shank{shank_idx - 1}_xyz_picks.json'
         xyz_file = sorted(self.folder_path.glob(xyz_file_name))
 
         if len(xyz_file) != 1:
@@ -180,9 +180,12 @@ class LoadDataLocal:
         bregma = atlas.ALLEN_CCF_LANDMARKS_MLAPDV_UM['bregma'].tolist()
         origin = {'origin': {'bregma': bregma}}
         channel_dict.update(origin)
+
         # Save the channel locations
-        with open(Path(self.folder_path, 'channel_locations.json'), "w") as f:
+        channel_locations_file = 'channel_locations.json' if shank_idx == 0 else f'channel_locations_shank{shank_idx - 1}.json'
+        with open(Path(self.folder_path, channel_locations_file), "w") as f:
             json.dump(channel_dict, f, indent=2, separators=(',', ': '))
+
         original_json = self.alignments
         date = datetime.now().replace(microsecond=0).isoformat()
         data = {date: [feature.tolist(), track.tolist()]}
@@ -191,7 +194,7 @@ class LoadDataLocal:
         else:
             original_json = data
         # Save the new alignment
-        prev_alignment_file = 'prev_alignments.json' if shank_idx == 0 else f'prev_alignments_shank{shank_idx}.json'
+        prev_alignment_file = 'prev_alignments.json' if shank_idx == 0 else f'prev_alignments_shank{shank_idx - 1}.json'
 
         with open(Path(self.folder_path, prev_alignment_file), "w") as f:
             json.dump(original_json, f, indent=2, separators=(',', ': '))
