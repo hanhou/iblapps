@@ -261,7 +261,7 @@ class PlotData:
                                     1.1 * np.max(spike_amps)]),
                 'xaxis': 'Amplitude (uV)',
                 'title': 'Peak to Trough duration (ms)',
-                'cmap': 'RdYlGn',
+                'cmap': 'bwr',
                 'cluster': True
             }
 
@@ -370,11 +370,11 @@ class PlotData:
             data_img = {
                 'img': corr,
                 'scale': np.array([scale, scale]),
-                'levels': np.array([np.min(corr), np.max(corr)]),
+                'levels': np.array([np.min(corr), np.max(corr[corr < 0.99])]),
                 'offset': np.array([0, 0]),
                 'xrange': np.array([self.chn_min, self.chn_max]),
                 'cmap': 'viridis',
-                'title': 'Correlation',
+                'title': 'Spike correlation',
                 'xaxis': 'Distance from probe tip (um)'
             }
             return data_img
