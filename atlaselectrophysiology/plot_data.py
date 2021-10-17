@@ -379,6 +379,29 @@ class PlotData:
             }
             return data_img
 
+        
+    def get_lfp_corr_cov_data_img(self, corr=True):
+        if not self.lfp_data_status:
+            data_img = None
+            return data_img
+        else:
+            lfp_corr = np.load(self.ephys_path.joinpath('lfp_corr.npz'))
+            corr = lfp_corr.f.lfp_corr if corr else lfp_corr.f.lfp_cov
+            corr[np.isnan(corr)] = 0
+            scale = (self.chn_max - self.chn_min) / corr.shape[0]
+            data_img = {
+                'img': corr,
+                'scale': np.array([scale, scale]),
+                'levels': np.array([np.min(corr), np.max(corr[corr < 0.99])]),
+                'offset': np.array([0, 0]),
+                'xrange': np.array([self.chn_min, self.chn_max]),
+                'cmap': 'viridis',
+                'title': 'LFP correlation',
+                'xaxis': 'Distance from probe tip (um)'
+            }
+            return data_img
+        
+
     def get_rms_data_img_probe(self, format):
         # Finds channels that are at equivalent depth on probe and averages rms values for each
         # time point at same depth togehter

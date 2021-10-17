@@ -97,7 +97,33 @@ def extract_rmsmap(fbin, out_folder=None, spectra=True, max_length_in_sec=None):
         fdict = {'power': rms['spectral_density'].astype(np.single),
                  'freqs': rms['fscale'].astype(np.single)}
         aio.save_object_npy(out_folder, object=alf_object_freq, dico=fdict)
+        
+        
+def extract_lfpcorr(lfp_file, out_folder=None, max_length_in_sec=None):
+    """
+    Extract lfp correlation and covariance matrix
+    See https://github.com/hanhou/code_cache/tree/master/lfpSurface
 
+    I bypassed the alf format here for my own convienence. -Han
+    """
+    _logger.info(f"Computing lfp correlation for {lfp_file}")
+    if not isinstance(lfp_file, spikeglx.Reader):
+        sglx = spikeglx.Reader(lfp_file)
+        sglx.open()    
+        
+    # If max_length_in_sec is not None, use the last {max_length_in_sec} seconds of data
+    start = 0 if max_length_in_sec is None else max(0, sglx.ns - int(max_length_in_sec * sglx.fs))
+    lfp = sglx.read_samples(first_sample=start, last_sample=sglx.ns)[0].transpose()
+    if max(lfp[-1, :]) > 1:  # If the LFP file has the sync channel, remove it
+        lfp = lfp[:-1, :]
+    
+    # Corrcoef and covariance matrix
+    lfp_corr = np.corrcoef(lfp)
+    lfp_cov = np.cov(lfp)
+    
+    # Save data (not using alf format for simplicity)
+    np.savez(out_folder.joinpath('lfp_corr'), lfp_corr=lfp_corr, lfp_cov=lfp_cov)    
+        
 
 def _sample2v(ap_file):
     """
@@ -127,12 +153,15 @@ def extract_data(ks_path, ephys_path, out_path, max_length_in_sec=None):
     print(efiles)
     for efile in efiles:
         if efile.get('ap') and efile.ap.exists():
-            ks2_to_alf(ks_path, ephys_path, out_path, bin_file=efile.ap,
-                       ampfactor=_sample2v(efile.ap), label=None, force=True)
+            # ks2_to_alf(ks_path, ephys_path, out_path, bin_file=efile.ap,
+            #            ampfactor=_sample2v(efile.ap), label=None, force=True)
 
-            extract_rmsmap(efile.ap, out_folder=out_path, spectra=False, max_length_in_sec=max_length_in_sec)
+            # extract_rmsmap(efile.ap, out_folder=out_path, spectra=False, max_length_in_sec=max_length_in_sec)
+            pass
         if efile.get('lf') and efile.lf.exists():
-            extract_rmsmap(efile.lf, out_folder=out_path, max_length_in_sec=max_length_in_sec)
+            extract_lfpcorr(efile.lf, out_folder=out_path, max_length_in_sec=max_length_in_sec)
+            # extract_rmsmap(efile.lf, out_folder=out_path, max_length_in_sec=max_length_in_sec)
+            pass
 
 
 # if __name__ == '__main__':

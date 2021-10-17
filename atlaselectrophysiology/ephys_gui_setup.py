@@ -68,8 +68,14 @@ class Setup():
         scatter_amp.triggered.connect(lambda: self.plot_scatter(self.scat_amp_data))
         img_fr = QtGui.QAction('Firing Rate', self, checkable=True, checked=True)
         img_fr.triggered.connect(lambda: self.plot_image(self.img_fr_data))
-        img_corr = QtGui.QAction('Correlation', self, checkable=True, checked=False)
+        img_corr = QtGui.QAction('Spike Correlation', self, checkable=True, checked=False)
         img_corr.triggered.connect(lambda: self.plot_image(self.img_corr_data))
+
+        img_lfp_corr = QtGui.QAction('LFP Correlation', self, checkable=True, checked=False)
+        img_lfp_corr.triggered.connect(lambda: self.plot_image(self.img_lfp_corr_data))
+        img_lfp_cov = QtGui.QAction('LFP Covariance', self, checkable=True, checked=False)
+        img_lfp_cov.triggered.connect(lambda: self.plot_image(self.img_lfp_cov_data))
+
         img_rmsAP = QtGui.QAction('rms AP', self, checkable=True, checked=False)
         img_rmsAP.triggered.connect(lambda: self.plot_image(self.img_rms_APdata))
         img_rmsLFP = QtGui.QAction('rms LFP', self, checkable=True, checked=False)
@@ -92,12 +98,19 @@ class Setup():
         self.img_options_group.addAction(scatter_drift)
         img_options.addAction(img_corr)
         self.img_options_group.addAction(img_corr)
+        
+        img_options.addAction(img_lfp_corr)
+        self.img_options_group.addAction(img_lfp_corr)
+        img_options.addAction(img_lfp_cov)
+        self.img_options_group.addAction(img_lfp_cov)
+        img_options.addAction(img_LFP)
+        self.img_options_group.addAction(img_LFP)     
+           
         img_options.addAction(img_rmsAP)
         self.img_options_group.addAction(img_rmsAP)
         img_options.addAction(img_rmsLFP)
         self.img_options_group.addAction(img_rmsLFP)
-        img_options.addAction(img_LFP)
-        self.img_options_group.addAction(img_LFP)
+
         img_options.addAction(scatter_fr)
         self.img_options_group.addAction(scatter_fr)
         img_options.addAction(scatter_p2t)
