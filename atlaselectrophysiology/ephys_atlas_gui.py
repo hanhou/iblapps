@@ -1778,6 +1778,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
             self.selected_line = []
             if type(items[0]) == pg.InfiniteLine:
                 self.selected_line = items[0]
+                self.fig_data_ax.setLabel(f'Distance from probe tip (um); selected = {items[0].getPos()[1]:.0f}')
             elif (items[0] == self.fig_scale) & (type(items[1]) == pg.LinearRegionItem):
                 idx = np.where(self.scale_regions == items[1])[0][0]
                 self.fig_scale_ax.setLabel('Scale Factor = ' +

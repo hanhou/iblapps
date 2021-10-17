@@ -608,7 +608,7 @@ class Setup():
                                                          z=50))
         self.set_axis(self.fig_img, 'bottom')
         self.fig_data_ax = self.set_axis(self.fig_img, 'left',
-                                         label='Distance from probe tip (uV)')
+                                         label='Distance from probe tip (um)')
 
         self.fig_img_cb = pg.PlotItem()
         self.fig_img_cb.setMaximumHeight(70)
