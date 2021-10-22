@@ -1167,8 +1167,8 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
              self.scat_amp_data) = self.plotdata.get_fr_p2t_data_scatter()
             self.img_corr_data = self.plotdata.get_correlation_data_img()
 
-            self.img_lfp_corr_data = self.plotdata.get_lfp_corr_cov_data_img(corr=True)
-            self.img_lfp_cov_data = self.plotdata.get_lfp_corr_cov_data_img(corr=False)
+            self.img_lfp_corr_data = self.plotdata.get_lfp_corr_cov_data_img(if_corr=True)
+            self.img_lfp_cov_data = self.plotdata.get_lfp_corr_cov_data_img(if_corr=False)
             
             self.img_fr_data = self.plotdata.get_fr_img()
             self.img_rms_APdata, self.probe_rms_APdata = self.plotdata.get_rms_data_img_probe('AP')

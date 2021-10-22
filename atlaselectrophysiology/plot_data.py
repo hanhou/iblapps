@@ -380,23 +380,24 @@ class PlotData:
             return data_img
 
         
-    def get_lfp_corr_cov_data_img(self, corr=True):
+    def get_lfp_corr_cov_data_img(self, if_corr=True):
         if not self.lfp_data_status:
             data_img = None
             return data_img
         else:
             lfp_corr = np.load(self.ephys_path.joinpath('lfp_corr.npz'))
-            corr = lfp_corr.f.lfp_corr if corr else lfp_corr.f.lfp_cov
+            corr = lfp_corr.f.lfp_corr if if_corr else lfp_corr.f.lfp_cov
+            corr = corr[np.ix_(self.chn_ind, self.chn_ind)]
             corr[np.isnan(corr)] = 0
             scale = (self.chn_max - self.chn_min) / corr.shape[0]
             data_img = {
                 'img': corr,
                 'scale': np.array([scale, scale]),
-                'levels': np.array([np.min(corr), np.max(corr[corr < 0.99])]),
+                'levels': np.array([np.min(corr), np.max(corr[corr < 0.99])]) if if_corr else np.array([np.min(corr), np.max(corr)]),
                 'offset': np.array([0, 0]),
                 'xrange': np.array([self.chn_min, self.chn_max]),
                 'cmap': 'viridis',
-                'title': 'LFP correlation',
+                'title': 'LFP correlation' if if_corr else 'LFP covariance',
                 'xaxis': 'Distance from probe tip (um)'
             }
             return data_img
