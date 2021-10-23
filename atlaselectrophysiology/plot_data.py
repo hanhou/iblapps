@@ -263,6 +263,9 @@ class PlotData:
             }
 
             p2t = self.clusters['peakToTrough'][clu]
+            
+            # Sort p2t from positive to negative to emphasis the axonal spikes
+            p2t, spike_amps, spike_depths = (np.array(l) for l in zip(*sorted(zip(p2t, spike_amps, spike_depths), key=lambda k: k[0], reverse=True)))
 
             # Define the p2t levels so always same colourbar across sessions
             p2t_levels = [-1.5, 1.5]
