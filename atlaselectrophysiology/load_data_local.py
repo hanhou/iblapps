@@ -5,6 +5,7 @@ from pathlib import Path
 import alf.io
 import glob
 import json
+import scipy
 
 # brain_atlas = atlas.AllenAtlas(25)
 
@@ -256,3 +257,79 @@ class LoadDataLocal:
             channel_dict.update(data)
 
         return channel_dict
+
+
+    def get_behavioral_event_data(self):
+        # Read behavioral data from bitcode.mat        
+        STRIG_, GOCUE_, CHOICEL_, CHOICER_, REWARD_, ITI_ = 0, 1, 2, 3, 4, 5
+
+        # Load bitcode.mat
+        try:
+            mat = scipy.io.loadmat(glob.glob(str(self.folder_path) + '\\*bitcode.mat')[0])
+            print('Bitcode.mat loaded!')
+        except:
+            print('No bitcode.mat...')
+            return None
+            
+        dig_marker_per_trial = mat['digMarkerPerTrial']
+        
+        # Trial types
+        ignore_trials = np.all(np.isnan(dig_marker_per_trial[:, [CHOICEL_, CHOICER_]]), 1)
+        reward_trials = ~np.isnan(dig_marker_per_trial[:, REWARD_])
+        noreward_trials = ~ignore_trials & ~reward_trials
+        choiceL_trials = ~np.isnan(dig_marker_per_trial[:, CHOICEL_])
+        choiceR_trials = ~np.isnan(dig_marker_per_trial[:, CHOICER_])
+        choice_times = np.nanmean(dig_marker_per_trial[:, [CHOICEL_, CHOICER_]], 1)
+        events = {}
+        
+        # ----- All go cues ----
+        events['gocue_all'] = dig_marker_per_trial[:, GOCUE_]
+        events['ignore_all'] = dig_marker_per_trial[ignore_trials, GOCUE_]
+        events['left_all'] = choice_times[choiceL_trials]
+        events['right_all'] = choice_times[choiceR_trials]
+        events['iti_all'] = dig_marker_per_trial[:, ITI_]
+
+        # ----- Define events times ------
+        # 1. Choice_direction
+        # events['choice_direction'] = {'Left': mat['choiceL'], 'Right': mat['choiceR']}
+
+        # 2. Choice_outcome
+        # choice_reward = choice_times[reward_trials]
+        # choice_noreward = choice_times[noreward_trials]
+        # events['choice_outcome'] = {'reward': choice_reward, 'no_reward': choice_noreward}
+
+        # 1. Gocue_outcome
+        # gocue_reward = dig_marker_per_trial[reward_trials, GOCUE_]
+        # gocue_noreward = dig_marker_per_trial[noreward_trials, GOCUE_]
+        gocue_L_reward = dig_marker_per_trial[reward_trials & choiceL_trials, GOCUE_]
+        gocue_R_reward = dig_marker_per_trial[reward_trials & choiceR_trials, GOCUE_]
+        gocue_L_noreward = dig_marker_per_trial[noreward_trials & choiceL_trials, GOCUE_]
+        gocue_R_noreward = dig_marker_per_trial[noreward_trials & choiceR_trials, GOCUE_]
+        gocue_ignore = dig_marker_per_trial[ignore_trials, GOCUE_]
+        # events['gocue_direction_outcome'] = {'reward': gocue_reward, 'no_reward': gocue_noreward, 'ignore': gocue_ignore}
+        events['gocue_direction_outcome'] = {'L_reward': gocue_L_reward, 'R_reward': gocue_R_reward,
+                                            'L_noreward': gocue_L_noreward, 'R_noreward': gocue_R_noreward,
+                                            'ignore': gocue_ignore}
+        # 2. Choice_direction_outcome
+        choice_L_reward = choice_times[reward_trials & choiceL_trials]
+        choice_R_reward = choice_times[reward_trials & choiceR_trials]
+        choice_L_noreward = choice_times[noreward_trials & choiceL_trials]
+        choice_R_noreward = choice_times[noreward_trials & choiceR_trials]
+        events['choice_direction_outcome'] = {'L_reward': choice_L_reward, 'R_reward': choice_R_reward,
+                                            'L_noreward': choice_L_noreward, 'R_noreward': choice_R_noreward}
+
+        # iti_reward = dig_marker_per_trial[reward_trials, ITI_]
+        # iti_noreward = dig_marker_per_trial[noreward_trials, ITI_]
+        # iti_ignore = dig_marker_per_trial[ignore_trials, ITI_]
+        # events['iti_outcome'] = {'reward': iti_reward, 'no_reward': iti_noreward, 'ignore': iti_ignore}
+
+        # 3. ITI_choice*outcome
+        iti_L_reward = dig_marker_per_trial[reward_trials & choiceL_trials, ITI_]
+        iti_R_reward = dig_marker_per_trial[reward_trials & choiceR_trials, ITI_]
+        iti_L_noreward = dig_marker_per_trial[noreward_trials & choiceL_trials, ITI_]
+        iti_R_noreward = dig_marker_per_trial[noreward_trials & choiceR_trials, ITI_]
+        events['iti_direction_outcome'] = {'L_reward': iti_L_reward, 'R_reward': iti_R_reward,
+                                        'L_noreward': iti_L_noreward, 'R_noreward': iti_R_noreward}
+
+        return events  
+        

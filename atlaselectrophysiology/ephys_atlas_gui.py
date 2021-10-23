@@ -899,6 +899,16 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
                 plot = pg.ScatterPlotItem()
                 plot.setData(x=data['x'], y=data['y'],
                              symbol=symbol, size=size, brush=brush, pen=data['pen'])
+                           
+            # Add markers to indicate behavioral events, if any
+            if 'events' in data:
+                for events in data['events']:
+                    plot_events = pg.ScatterPlotItem()
+                    plot_events.setData(x=events['times'], 
+                                        y=[self.probe_top + self.probe_extra + events['offset']] * len(events['times']), 
+                                        **events['setting'])
+                    self.fig_img.addItem(plot_events)
+                    self.img_plots.append(plot_events)
 
             self.fig_img.addItem(plot)
             self.fig_img.setXRange(min=data['xrange'][0], max=data['xrange'][1],
@@ -914,6 +924,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
             if data['cluster']:
                 self.data = data['x']
                 self.data_plot.sigClicked.connect(self.cluster_clicked)
+
 
     def plot_line(self, data):
         """
@@ -1038,6 +1049,16 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
                 self.img_cbars.append(cbar)
             else:
                 image.setLevels((1, 0))
+                
+            # Add markers to indicate behavioral events, if any
+            if 'events' in data:
+                for events in data['events']:
+                    plot_events = pg.ScatterPlotItem()
+                    plot_events.setData(x=events['times'], 
+                                        y=[self.probe_top + self.probe_extra + events['offset']] * len(events['times']), 
+                                        **events['setting'])
+                    self.fig_img.addItem(plot_events)
+                    self.img_plots.append(plot_events)
 
             self.fig_img.addItem(image)
             self.img_plots.append(image)
@@ -1162,7 +1183,10 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         if not self.data_status:
             self.plotdata = pd.PlotData(self.alf_path, ephys_path, self.current_shank_idx)
             self.set_lims(np.min([0, self.plotdata.chn_min]), self.plotdata.chn_max)
-            self.scat_drift_data = self.plotdata.get_depth_data_scatter()
+            
+            self.behav_event_data = self.loaddata.get_behavioral_event_data()
+            
+            self.scat_drift_data = self.plotdata.get_depth_data_scatter(events=self.behav_event_data)
             (self.scat_fr_data, self.scat_p2t_data,
              self.scat_amp_data) = self.plotdata.get_fr_p2t_data_scatter()
             self.img_corr_data = self.plotdata.get_correlation_data_img()
@@ -1170,7 +1194,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
             self.img_lfp_corr_data = self.plotdata.get_lfp_corr_cov_data_img(if_corr=True)
             self.img_lfp_cov_data = self.plotdata.get_lfp_corr_cov_data_img(if_corr=False)
             
-            self.img_fr_data = self.plotdata.get_fr_img()
+            self.img_fr_data = self.plotdata.get_fr_img(events=self.behav_event_data)
             self.img_rms_APdata, self.probe_rms_APdata = self.plotdata.get_rms_data_img_probe('AP')
             self.img_rms_LFPdata, self.probe_rms_LFPdata = self.plotdata.get_rms_data_img_probe(
                 'LF')

@@ -81,7 +81,7 @@ class PlotData:
                 self.lfp_power = lfp_spectrum.get('power', [])
                 if not np.any(self.lfp_power):
                     self.lfp_power = lfp_spectrum.get('amps')
-                self.lfp_data_status = True
+                self.lfp_data_status = True             
             else:
                 print('lfp data was not found, some plots will not display')
                 self.lfp_data_status = False
@@ -159,8 +159,23 @@ class PlotData:
         self.kp_idx = np.where(~np.isnan(self.spikes['depths'][self.spike_idx]) &
                                ~np.isnan(self.spikes['amps'][self.spike_idx]))[0]
 
+        
+    @staticmethod
+    def add_behavioral_events(data, events):
+        data['events'] = [
+                    dict(setting=dict(pen='k', brush='k', symbol='o'), times=events['iti_all'], offset=150),                    
+                    dict(setting=dict(pen='g', brush='g', symbol='t'), times=events['gocue_all'], offset=150),
+                    dict(setting=dict(pen='b', brush='b', symbol='t2'), times=events['gocue_direction_outcome']['R_reward'], offset=100),
+                    dict(setting=dict(pen='b', brush='w', symbol='t2'), times=events['gocue_direction_outcome']['R_noreward'], offset=100),
+                    dict(setting=dict(pen='r', brush='r', symbol='t3'), times=events['gocue_direction_outcome']['L_reward'], offset=50),
+                    dict(setting=dict(pen='r', brush='w', symbol='t3'), times=events['gocue_direction_outcome']['L_noreward'], offset=50),
+                    dict(setting=dict(pen='k', brush='k', symbol='x'), times=events['gocue_direction_outcome']['ignore'], offset=0),
+                ]   
+        return data
+    
+
 # Plots that require spike and cluster data
-    def get_depth_data_scatter(self):
+    def get_depth_data_scatter(self, events=None):
         if not self.spike_data_status:
             data_scatter = None
             return data_scatter
@@ -204,9 +219,12 @@ class PlotData:
                 'xaxis': 'Time (s)',
                 'title': 'Amplitude (uV)',
                 'cmap': 'BuPu',
-                'cluster': False
+                'cluster': False,
             }
-
+            
+            # Add behavioral events, if any
+            if events is not None:
+                data_scatter = self.add_behavioral_events(data_scatter, events)
             return data_scatter
 
     def get_fr_p2t_data_scatter(self):
@@ -283,10 +301,10 @@ class PlotData:
                 'cmap': 'magma',
                 'cluster': True
             }
-
             return data_fr_scatter, data_p2t_scatter, data_amp_scatter
 
-    def get_fr_img(self):
+
+    def get_fr_img(self, events=None):
         if not self.spike_data_status:
             data_img = None
             return data_img
@@ -310,6 +328,10 @@ class PlotData:
                 'cmap': 'binary',
                 'title': 'Firing Rate'
             }
+            
+            # Add behavioral events, if any
+            if events is not None:
+                data_img = self.add_behavioral_events(data_img, events)
 
             return data_img
 
@@ -385,7 +407,10 @@ class PlotData:
             data_img = None
             return data_img
         else:
-            lfp_corr = np.load(self.ephys_path.joinpath('lfp_corr.npz'))
+            try:
+                lfp_corr = np.load(self.ephys_path.joinpath('lfp_corr.npz'))
+            except:
+                return None
             corr = lfp_corr.f.lfp_corr if if_corr else lfp_corr.f.lfp_cov
             corr = corr[np.ix_(self.chn_ind, self.chn_ind)]
             corr[np.isnan(corr)] = 0
