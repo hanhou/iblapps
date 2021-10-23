@@ -153,14 +153,14 @@ def extract_data(ks_path, ephys_path, out_path, max_length_in_sec=None):
     print(efiles)
     for efile in efiles:
         if efile.get('ap') and efile.ap.exists():
-            # ks2_to_alf(ks_path, ephys_path, out_path, bin_file=efile.ap,
-            #            ampfactor=_sample2v(efile.ap), label=None, force=True)
+            ks2_to_alf(ks_path, ephys_path, out_path, bin_file=efile.ap,
+                       ampfactor=_sample2v(efile.ap), label=None, force=True)
 
-            # extract_rmsmap(efile.ap, out_folder=out_path, spectra=False, max_length_in_sec=max_length_in_sec)
+            extract_rmsmap(efile.ap, out_folder=out_path, spectra=False, max_length_in_sec=max_length_in_sec)
             pass
         if efile.get('lf') and efile.lf.exists():
             extract_lfpcorr(efile.lf, out_folder=out_path, max_length_in_sec=max_length_in_sec)
-            # extract_rmsmap(efile.lf, out_folder=out_path, max_length_in_sec=max_length_in_sec)
+            extract_rmsmap(efile.lf, out_folder=out_path, max_length_in_sec=max_length_in_sec)
             pass
 
 
