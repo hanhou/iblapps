@@ -265,7 +265,7 @@ class LoadDataLocal:
 
         # Load bitcode.mat
         try:
-            mat = scipy.io.loadmat(glob.glob(str(self.folder_path) + '\\*bitcode.mat')[0])
+            mat = scipy.io.loadmat(glob.glob(str(self.folder_path.parent) + '\\*\\*bitcode.mat')[0])
             print('Bitcode.mat loaded!')
         except:
             print('No bitcode.mat...')
