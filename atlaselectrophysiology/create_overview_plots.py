@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 import glob
+import os
 
 
 def make_overview_plot(folder, sess_info, save_folder=None):
@@ -23,7 +24,7 @@ def make_overview_plot(folder, sess_info, save_folder=None):
         ax.imshow(image)
         return image
 
-    fig = plt.figure(constrained_layout=True, figsize=(18, 9))
+    fig = plt.figure(constrained_layout=True, figsize=(18, 9), dpi=1000)
     gs = fig.add_gridspec(3, 18)
     gs.update(wspace=0.025, hspace=0.05)
 
@@ -78,4 +79,5 @@ def make_overview_plot(folder, sess_info, save_folder=None):
 
     plt.savefig(save_folder.joinpath(image_info + "overview.png"),
                 bbox_inches='tight', pad_inches=0)
-    plt.show()
+    # plt.show()
+    os.startfile(save_folder.joinpath(image_info + "overview.png"))

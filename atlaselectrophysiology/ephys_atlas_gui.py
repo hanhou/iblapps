@@ -358,7 +358,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         # Reset all axis, put view back to 1 and remove any reference lines
         self.reset_axis_button_pressed()
         self.set_view(view=1, configure=False)
-        self.remove_lines_points()
+        # self.remove_lines_points()
 
         # First go through all the image plots
         self.fig_data_layout.removeItem(self.fig_probe)
@@ -385,6 +385,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
             exporter.export(str(image_path.joinpath(sess_info + 'img_' +
                                                     self.img_options_group.checkedAction()
                                                     .text() + '.png')))
+            self.add_lines_points()  # Add reference line
             self.toggle_plots(self.img_options_group)
             plot = self.img_options_group.checkedAction()
 
@@ -412,6 +413,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
             exporter.export(str(image_path.joinpath(sess_info + 'probe_' +
                                                     self.probe_options_group.checkedAction().
                                                     text() + '.png')))
+            self.add_lines_points()  # Add reference line
             self.toggle_plots(self.probe_options_group)
             plot = self.probe_options_group.checkedAction()
 
@@ -440,6 +442,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
             exporter.export(str(image_path.joinpath(sess_info + 'line_' +
                                                     self.line_options_group.checkedAction().
                                                     text() + '.png')))
+            self.add_lines_points()  # Add reference line
             self.toggle_plots(self.line_options_group)
             plot = self.line_options_group.checkedAction()
 
