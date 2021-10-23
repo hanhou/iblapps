@@ -1935,11 +1935,11 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         :return brush: colour use for the line
         :type brush: pyqtgraph Brush
         """
-        colours = ['#000000', '#cc0000', '#6aa84f', '#1155cc', '#a64d79']
+        colours = ['#cc0000', '#6aa84f', '#a64d79', '#ff8d00', '00FFF7', '#03f8fc', '#fc03e7']
         style = [QtCore.Qt.SolidLine, QtCore.Qt.DashLine, QtCore.Qt.DashDotLine]
         col = QtGui.QColor(colours[randrange(len(colours))])
         sty = style[randrange(len(style))]
-        pen = pg.mkPen(color=col, style=sty, width=3)
+        pen = pg.mkPen(color=col, style=sty, width=5)
         brush = pg.mkBrush(color=col)
         return pen, brush
 
