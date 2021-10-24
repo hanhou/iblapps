@@ -926,6 +926,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
 
             if data['cluster']:
                 self.data = data['x']
+                self.click_indicator = []
                 self.data_plot.sigClicked.connect(self.cluster_clicked)
 
 
@@ -1721,6 +1722,14 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
     def cluster_clicked(self, item, point):
         point_pos = point[0].pos()
         clust_idx = np.argwhere(self.data == point_pos.x())[0][0]
+        
+        # Add click indicator     
+        if self.click_indicator == []:
+            self.click_indicator = pg.ScatterPlotItem()
+            self.fig_img.addItem(self.click_indicator)
+            self.img_plots.append(self.click_indicator)
+        self.click_indicator.setData(x=[point_pos.x()], y=[point_pos.y()], symbol='+', size=30, pen='c')
+
 
         autocorr = self.plotdata.get_autocorr(clust_idx)
         autocorr_plot = pg.PlotItem()
@@ -1805,7 +1814,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
                 this_raster = pg.ScatterPlotItem()
                 this_raster.setData(x=rasters,
                                     y=yrast + raster_top,
-                                    size=1,
+                                    size=.7,
                                     pen=color
                                     )
                 raster_top += ntrials
