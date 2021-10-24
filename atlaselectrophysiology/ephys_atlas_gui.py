@@ -1743,18 +1743,84 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         self.set_axis(template_plot, 'left', label='Amplitude (a.u.)')
         plot.setData(x=self.plotdata.t_template, y=template_wf, pen=self.kpen_solid)
         template_plot.addItem(plot)
+        
+        # clust_layout = pg.GraphicsLayout()
+        # clust_layout.addItem(autocorr_plot, 0, 0)
+        # clust_layout.addItem(template_plot, 1, 0)
+        # clust_layout.addItem(psth_plot, 0, 1, rowspan=4)
+        # clust_layout.addItem(raster_plot, 1, 1, rowspan=4)
 
-        clust_layout = pg.GraphicsLayout()
-        clust_layout.addItem(autocorr_plot, 0, 0)
-        clust_layout.addItem(template_plot, 1, 0)
-
-        self.clust_win = ephys_gui.PopupWindow(title=f'Cluster {clust_idx}')
+        self.clust_win = ephys_gui.PopupWindow(title=f'Cluster {clust_idx}', size=(1500, 700))
         self.clust_win.closed.connect(self.popup_closed)
         self.clust_win.moved.connect(self.popup_moved)
         self.clust_win.popup_widget.addItem(autocorr_plot, 0, 0)
         self.clust_win.popup_widget.addItem(template_plot, 1, 0)
+        
+        # PSTH and raster plot
+        try:
+            psth_all = self.plotdata.get_psth(clust_idx, self.behav_event_data)
+            psth_plots, raster_plot = self.plot_psth_raster(psth_all)     
+               
+            for i, (psth_plot, raster_plot) in enumerate(zip(psth_plots, raster_plot)):
+                self.clust_win.popup_widget.addItem(psth_plot, 0, 1 + i)
+                self.clust_win.popup_widget.addItem(raster_plot, 1, 1 + i)
+        except:
+            self.clust_win.resize(300, 500)
+       
         self.cluster_popups.append(self.clust_win)
         self.activateWindow()
+        
+        
+    def plot_psth_raster(self, psth_all):
+        # A pyqtgraph implementation of PSTHPlugin for phy2 (Han Hou)
+        # psth_plots = pg.GraphicsLayout()
+        psth_plots, raster_plots = [], []
+        
+        styles = [['r', QtCore.Qt.SolidLine, 2], 
+                  ['b', QtCore.Qt.SolidLine, 2], 
+                  ['r', QtCore.Qt.DashLine, 1], 
+                  ['b', QtCore.Qt.DashLine, 1], 
+                  ['k', QtCore.Qt.DotLine, 0.5]]
+                
+        for j, (psth_type, psth_per_type) in enumerate(psth_all.items()):  # For each event plot
+            psth_plot = pg.PlotItem()
+            psth_plot.addLegend()  # Must call this before!!
+            
+            raster_plot = pg.PlotItem()
+            raster_top = 0
+
+            for k, (condition_name, psth) in enumerate(psth_per_type.items()):  # For each line in each plot
+                hist, bins, rasters, yrast, ntrials = psth['hist'], psth['bins'], psth['rasters'], psth['yrast'], psth['ntrials']
+                
+                # Plot psth
+                this_curve = pg.PlotCurveItem()
+                color, style, width = styles[k % len(styles)]
+                this_curve.setData(x=bins[:-1],
+                                   y=hist,
+                                   name=condition_name if j==0 else None,
+                                   pen=pg.mkPen(color=color, style=style, width=width))
+                psth_plot.addItem(this_curve)
+                
+                # Plot raster
+                this_raster = pg.ScatterPlotItem()
+                this_raster.setData(x=rasters,
+                                    y=yrast + raster_top,
+                                    size=1,
+                                    pen=color
+                                    )
+                raster_top += ntrials
+                raster_plot.addItem(this_raster)
+                raster_plot.addItem(pg.InfiniteLine(pos=raster_top, angle=0, pen=pg.mkPen('k', style=QtCore.Qt.DashLine)))
+            
+            psth_plot.addItem(pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen('k', style=QtCore.Qt.DashLine)))
+            psth_plot.setLabel('bottom', psth_type.split('_')[0])
+            psth_plots.append(psth_plot)
+            
+            raster_plot.addItem(pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen('k', style=QtCore.Qt.DashLine)))
+            raster_plots.append(raster_plot)
+                
+        return psth_plots, raster_plots
+        
 
     def on_mouse_double_clicked(self, event):
         """

@@ -666,6 +666,56 @@ class PlotData:
             data_img.update(stim_data)
 
         return data_img
+    
+    def get_psth(self, clust_idx, events):
+        idx = np.where(self.spikes['clusters'] == self.clust_id[clust_idx])[0]
+        spike_times = self.spikes['times'][idx]
+        
+        psth = dict()
+        
+        for j, (event_plot_name, event_plot_events) in enumerate(events.items()):  # For each event plot
+            if 'all' in event_plot_name: continue
+            
+            psth[event_plot_name] = dict()
+
+            for k, (events_name, events_this) in enumerate(event_plot_events.items()):  # For each line in each plot
+                # Get data
+                rasters, activity, yrast, ntrials, nevents = self.align_spikes(spike_times, events_this, win=(-2, 5))
+                
+                hist, bins = np.histogram(activity, weights=np.ones(nevents) * (50 / ntrials), bins=250)
+                
+                psth[event_plot_name][events_name] = dict(rasters=rasters, activity=activity, yrast=yrast, ntrials=ntrials, nevents=nevents,
+                                                          hist=hist, bins=bins)
+
+        return psth
+        
+
+    @staticmethod
+    def align_spikes(spike_times, events, win=(-2, 5)):
+        rasters = np.array([])
+        yrast = np.array([])
+        activity = []
+        last_ind = 0
+        
+        for i, d in enumerate(events):
+            if d < np.amax(spike_times) and d > np.amin(spike_times):
+                st = spike_times[last_ind:]
+                temp1 = st - (d + win[1])
+                ind1 = np.abs(temp1).argmin()
+                if temp1[ind1] > 0:
+                    ind1 -= 1
+                temp2 = st - (d + win[0])
+                ind2 = np.abs(temp2).argmin()
+                if temp2[ind2] < 0:
+                    ind2 += 1
+                temp = st[ind2:ind1] - d
+                last_ind = ind1
+                rasters = np.append(rasters, temp)
+                yrast = np.append(yrast, np.ones(len(temp)) * i)
+                activity.extend(temp)
+        
+        return rasters, np.array(activity), yrast, np.amax(yrast) if yrast !=[] else None, len(activity)
+    
 
     def get_autocorr(self, clust_idx):
         idx = np.where(self.spikes['clusters'] == self.clust_id[clust_idx])[0]
