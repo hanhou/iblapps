@@ -6,6 +6,7 @@ import os
 
 def make_overview_plot(folder, sess_info, save_folder=None):
 
+    insertion_name = [name for i,name in enumerate(folder.parts[:-1]) if folder.parts[i+1] == 'alf'][0]
     image_folder = folder
     image_info = sess_info
     if not save_folder:
@@ -26,7 +27,7 @@ def make_overview_plot(folder, sess_info, save_folder=None):
 
     fig = plt.figure(figsize=(8, 4), dpi=700)
     gs = fig.add_gridspec(2, 18, wspace=-0.1, hspace=0.05, top=0.88, bottom=0.05, left=0.01, right=0.99)
-    plt.figtext(0.02, 0.9, folder, fontsize=7)
+    plt.figtext(0.02, 0.9, insertion_name, fontsize=7)
 
     # Image view
     img_row_order = [0, 0, 0, 0, 0, 1]
@@ -84,10 +85,10 @@ def make_overview_plot(folder, sess_info, save_folder=None):
 
     ax.text(0.5, 0, image_info[:-1], va="center", ha="center", transform=ax.transAxes)
 
-    plt.savefig(save_folder.joinpath(image_info + "overview.png"),
+    plt.savefig(save_folder.joinpath(image_info + insertion_name + "_overview.png"),
                 bbox_inches='tight', pad_inches=0)
     plt.close()
-    os.startfile(save_folder.joinpath(image_info + "overview.png"))
+    os.startfile(save_folder.joinpath(image_info + insertion_name + "_overview.png"))
     
 
 def make_overview_plot_all(folder, sess_info, save_folder=None):
