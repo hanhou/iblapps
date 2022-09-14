@@ -339,19 +339,23 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         """
         Saves all plots from the GUI into folder
         """
+        
+        shank_info = '' if len(self.loaddata.get_nshanks()) == 1 else f'_shank{self.current_shank_idx + 1}'
+        
         # make folder to save plots to
         try:
             sess_info = (self.loaddata.subj + '_' + str(self.loaddata.date) + '_' +
                          self.loaddata.probe_label + '_')
-            image_path_overview = self.alf_path.joinpath('GUI_plots')
+            image_path_overview = self.alf_path.joinpath('GUI_plots' + shank_info)
             image_path = image_path_overview.joinpath(sess_info[:-1])
         except Exception:
             sess_info = ''
-            image_path_overview = self.alf_path.joinpath('GUI_plots')
+            image_path_overview = self.alf_path.joinpath('GUI_plots' + shank_info)
             image_path = image_path_overview
 
         if save_path:
             image_path_overview = Path(save_path)
+            
 
         os.makedirs(image_path_overview, exist_ok=True)
         os.makedirs(image_path, exist_ok=True)
@@ -510,7 +514,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         self.set_font(self.fig_hist_ref, 'bottom', ptsize=8)
         self.set_axis(self.fig_hist_ref, 'bottom', pen='w')
 
-        make_overview_plot(image_path, sess_info, save_folder=image_path_overview)
+        make_overview_plot(image_path, sess_info, save_folder=image_path_overview, shank_info=shank_info)
 
     def toggle_plots(self, options_group, reverse=False):
         """
