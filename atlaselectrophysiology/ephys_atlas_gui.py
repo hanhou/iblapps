@@ -355,7 +355,6 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
 
         if save_path:
             image_path_overview = Path(save_path)
-            
 
         os.makedirs(image_path_overview, exist_ok=True)
         os.makedirs(image_path, exist_ok=True)
@@ -1763,7 +1762,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         # clust_layout.addItem(psth_plot, 0, 1, rowspan=4)
         # clust_layout.addItem(raster_plot, 1, 1, rowspan=4)
 
-        self.clust_win = ephys_gui.PopupWindow(title=f'Cluster {clust_idx}', size=(1500, 700))
+        self.clust_win = ephys_gui.PopupWindow(title=f'Actual cluster_id {self.plotdata.clust_id[clust_idx]} (id in fig {clust_idx})', size=(1500, 700))
         self.clust_win.closed.connect(self.popup_closed)
         self.clust_win.moved.connect(self.popup_moved)
         self.clust_win.popup_widget.addItem(autocorr_plot, 0, 0)
@@ -1824,6 +1823,8 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
                 raster_top += ntrials
                 raster_plot.addItem(this_raster)
                 raster_plot.addItem(pg.InfiniteLine(pos=raster_top, angle=0, pen=pg.mkPen('k', style=QtCore.Qt.DashLine)))
+                
+                raster_plot.setXLink(psth_plot)
             
             psth_plot.addItem(pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen('k', style=QtCore.Qt.DashLine)))
             psth_plot.setLabel('bottom', psth_type.split('_')[0])

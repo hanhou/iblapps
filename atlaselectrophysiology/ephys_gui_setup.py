@@ -811,7 +811,7 @@ class PopupWindow(QtGui.QMainWindow):
 
     def __init__(self, title, parent=None, size=(300, 300), graphics=True):
         super(PopupWindow, self).__init__()
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        # self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.resize(size[0], size[1])
         self.move(randrange(30) + 1000, randrange(30) + 200)
         if graphics:
