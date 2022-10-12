@@ -6,6 +6,7 @@ from brainbox.processing import bincount2D
 from brainbox.population.decode import xcorr
 from brainbox.task import passive
 import scipy
+import pandas as pd
 from PyQt5 import QtGui
 
 BNK_SIZE = 10
@@ -78,6 +79,8 @@ class PlotData:
 
         try:
             self.clusters = alf.io.load_object(self.alf_path, 'clusters')
+            self.clusters.metrics = pd.read_csv(self.alf_path / "cluster_metrics.csv")
+            
             shank_spikes = np.isin(self.chn_ind_all[self.clusters.channels[self.spikes.clusters]],
                                    self.chn_ind)
             for key in self.spikes.keys():
