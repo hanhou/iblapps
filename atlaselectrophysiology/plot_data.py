@@ -56,11 +56,12 @@ class PlotData:
             self.chn_ind = self.chn_ind_all
             
             # Not restricited to channels with units but all available channels on this shank
-            if len(chn_x) == 4:
+            if len(chn_x) == 4:  # hard-coded for NP1.0
                 self.chn_coords_for_lfp = np.vstack(([27, 59, 11, 43] * int(384/4), np.repeat(np.r_[0:(20*384/2):20],2))).T
                 self.chn_ind_for_lfp = np.r_[0:384]
-            else:
-                breakpoint()
+            elif len(chn_x) == 2:  # hard-coded for NP2.1
+                self.chn_coords_for_lfp = np.vstack(([0, 32] * int(384/2), np.repeat(np.r_[0:(15*384/2):15],2))).T
+                self.chn_ind_for_lfp = np.r_[0:384]
 
 
         self.N_BNK = len(np.unique(self.chn_coords[:, 0]))
