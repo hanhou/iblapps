@@ -928,7 +928,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
             self.xrange = data['xrange']
 
             if data['cluster']:
-                self.data = data['x']
+                self.data = {'x': data['x'], 'y': data['y']}
                 self.click_indicator = []
                 self.data_plot.sigClicked.connect(self.cluster_clicked)
 
@@ -1721,20 +1721,33 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         else:
             self.lin_fit = True
             self.fit_button_pressed()
+            
+    def select_unit_by_id_pressed(self):
+        clust_id, done = QtWidgets.QInputDialog.getInt(
+             self, 'Select unit by ID', 'Cluster ID:')
+        
+        # Manual select unit
+        if done:
+            clust_idx_in_fig = np.argwhere(self.plotdata.clust_id == clust_id)[0][0]
+            self.cluster_clicked([], [], clust_idx_in_fig)
 
-    def cluster_clicked(self, item, point):
-        point_pos = point[0].pos()
-        clust_idx = np.argwhere(self.data == point_pos.x())[0][0]
+    def cluster_clicked(self, item, point, clust_idx_in_fig=None):
+        if clust_idx_in_fig is None:  # Otherwise, override
+            point_pos = point[0].pos()
+            clust_idx_in_fig = np.argwhere(self.data['x'] == point_pos.x())[0][0]
+            xx, yy = [point_pos.x()], [point_pos.y()]
+        else:
+            xx, yy = [self.data['x'][clust_idx_in_fig]], [self.data['y'][clust_idx_in_fig]]
         
         # Add click indicator     
         if self.click_indicator == []:
             self.click_indicator = pg.ScatterPlotItem()
             self.fig_img.addItem(self.click_indicator)
             self.img_plots.append(self.click_indicator)
-        self.click_indicator.setData(x=[point_pos.x()], y=[point_pos.y()], symbol='+', size=30, pen='c')
+        self.click_indicator.setData(x=xx, y=yy, symbol='+', size=30, pen='c')
 
 
-        autocorr = self.plotdata.get_autocorr(clust_idx)
+        autocorr = self.plotdata.get_autocorr(clust_idx_in_fig)
         autocorr_plot = pg.PlotItem()
         autocorr_plot.setXRange(min=np.min(self.plotdata.t_autocorr),
                                 max=np.max(self.plotdata.t_autocorr))
@@ -1746,7 +1759,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
                      brush=self.bar_colour)
         autocorr_plot.addItem(plot)
 
-        template_wf = self.plotdata.get_template_wf(clust_idx)
+        template_wf = self.plotdata.get_template_wf(clust_idx_in_fig)
         template_plot = pg.PlotItem()
         plot = pg.PlotCurveItem()
         template_plot.setXRange(min=np.min(self.plotdata.t_template),
@@ -1762,7 +1775,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         # clust_layout.addItem(psth_plot, 0, 1, rowspan=4)
         # clust_layout.addItem(raster_plot, 1, 1, rowspan=4)
 
-        self.clust_win = ephys_gui.PopupWindow(title=f'Actual cluster_id {self.plotdata.clust_id[clust_idx]} (id in fig {clust_idx})', size=(1500, 700))
+        self.clust_win = ephys_gui.PopupWindow(title=f'Actual cluster_id {self.plotdata.clust_id[clust_idx_in_fig]} (id in fig {clust_idx_in_fig})', size=(1500, 700))
         self.clust_win.closed.connect(self.popup_closed)
         self.clust_win.moved.connect(self.popup_moved)
         self.clust_win.popup_widget.addItem(autocorr_plot, 0, 0)
@@ -1770,7 +1783,7 @@ class MainWindow(QtWidgets.QMainWindow, ephys_gui.Setup):
         
         # PSTH and raster plot
         try:
-            psth_all = self.plotdata.get_psth(clust_idx, self.behav_event_data)
+            psth_all = self.plotdata.get_psth(clust_idx_in_fig, self.behav_event_data)
             psth_plots, raster_plot = self.plot_psth_raster(psth_all)     
                
             for i, (psth_plot, raster_plot) in enumerate(zip(psth_plots, raster_plot)):

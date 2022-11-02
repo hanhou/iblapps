@@ -405,6 +405,14 @@ class Setup():
         info_options = menu_bar.addMenu('Session Information')
         info_options.addAction(session_notes)
         info_options.addAction(region_info)
+        
+        # Add add-ons
+        select_unit_by_id = QtGui.QAction('Select Unit by ID', self)
+        select_unit_by_id.setShortcut('Ctrl+F')
+        select_unit_by_id.triggered.connect(self.select_unit_by_id_pressed)
+        
+        add_on = menu_bar.addMenu('Add On')
+        add_on.addAction(select_unit_by_id)
 
         # Display other sessions that are closeby if online mode
         if not self.offline:
